@@ -4,6 +4,7 @@ import android.accessibilityservice.AccessibilityService;
 import android.graphics.PixelFormat;
 import android.os.Bundle;
 import android.view.Gravity;
+import android.view.View;
 import android.view.WindowManager;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
@@ -37,6 +38,11 @@ public class CheatTyperService extends AccessibilityService {
         done.setOnClickListener(v -> typeText(input.getText().toString()));
         panel.addView(done);
 
+        Button close = new Button(this);
+        close.setText("✕");
+        close.setOnClickListener(v -> panel.setVisibility(View.GONE));
+        panel.addView(close);
+
         WindowManager.LayoutParams lp = new WindowManager.LayoutParams(
                 -1, -2,
                 WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY,
@@ -53,6 +59,7 @@ public class CheatTyperService extends AccessibilityService {
         if (src != null && src.isEditable()
                 && !getPackageName().equals(String.valueOf(src.getPackageName()))) {
             lastField = src;
+            panel.setVisibility(View.VISIBLE);
         }
     }
 
