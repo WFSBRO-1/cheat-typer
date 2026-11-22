@@ -7,13 +7,9 @@ import android.view.Gravity;
 import android.view.WindowManager;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
-import android.view.accessibility.AccessibilityWindowInfo;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
-import android.widget.Toast;
-
-import java.util.List;
 
 public class CheatTyperService extends AccessibilityService {
 
@@ -24,14 +20,8 @@ public class CheatTyperService extends AccessibilityService {
 
     @Override
     protected void onServiceConnected() {
-        super.onServiceConnected();
         wm = (WindowManager) getSystemService(WINDOW_SERVICE);
-        buildPanel();
-    }
-
-    private void buildPanel() {
         panel = new LinearLayout(this);
-        panel.setOrientation(LinearLayout.HORIZONTAL);
         panel.setBackgroundColor(0xDD222222);
         panel.setPadding(16, 16, 16, 16);
 
@@ -40,8 +30,7 @@ public class CheatTyperService extends AccessibilityService {
         input.setSingleLine(true);
         input.setTextColor(0xFFFFFFFF);
         input.setHintTextColor(0xFFAAAAAA);
-        panel.addView(input, new LinearLayout.LayoutParams(0,
-                LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
+        panel.addView(input, new LinearLayout.LayoutParams(0, -2, 1f));
 
         Button done = new Button(this);
         done.setText("Готово");
@@ -49,8 +38,7 @@ public class CheatTyperService extends AccessibilityService {
         panel.addView(done);
 
         WindowManager.LayoutParams lp = new WindowManager.LayoutParams(
-                WindowManager.LayoutParams.MATCH_PARENT,
-                WindowManager.LayoutParams.WRAP_CONTENT,
+                -1, -2,
                 WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY,
                 WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
                 PixelFormat.TRANSLUCENT);
@@ -62,4 +50,33 @@ public class CheatTyperService extends AccessibilityService {
     public void onAccessibilityEvent(AccessibilityEvent event) {
         if (event == null || event.getEventType() != AccessibilityEvent.TYPE_VIEW_FOCUSED) return;
         AccessibilityNodeInfo src = event.getSource();
-        if (src == null) return;
+        if (src != null && src.isEditable()
+                && !getPackageName().equals(String.valueOf(src.getPackageName()))) {
+            lastField = src;
+        }
+    }
+
+    private void typeText(String text) {
+        AccessibilityNodeInfo target = lastField;
+        if (target == null || !target.refresh()) target = findFocused();
+        if (target == null) return;
+        target.performAction(AccessibilityNodeInfo.ACTION_FOCUS);
+        Bundle args = new Bundle();
+        args.putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, text);
+        target.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, args);
+    }
+
+    private AccessibilityNodeInfo findFocused() {
+        AccessibilityNodeInfo root = getRootInActiveWindow();
+        return root == null ? null : root.findFocus(AccessibilityNodeInfo.FOCUS_INPUT);
+    }
+
+    @Override
+    public void onInterrupt() {}
+
+    @Override
+    public void onDestroy() {
+        if (panel != null && wm != null) wm.removeView(panel);
+        super.onDestroy();
+    }
+}
