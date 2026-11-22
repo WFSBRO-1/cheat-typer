@@ -1,11 +1,8 @@
 package com.example.cheattyper;
 
-import android.content.ClipData;
-import android.content.ClipboardManager;
-import android.content.Context;
+import android.content.Intent;
 import android.os.Bundle;
-import android.widget.Button;
-import android.widget.EditText;
+import android.provider.Settings;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -13,16 +10,20 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
 
-        EditText input = findViewById(R.id.input);
-        Button done = findViewById(R.id.done);
+        if (!isServiceEnabled()) {
+            Toast.makeText(this, "Включи Cheat Typer в спец. возможностях", Toast.LENGTH_LONG).show();
+            startActivity(new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS));
+        } else {
+            Toast.makeText(this, "Панель активна. Открой игру и тапни поле ввода", Toast.LENGTH_LONG).show();
+            finish();
+        }
+    }
 
-        done.setOnClickListener(v -> {
-            String text = input.getText().toString();
-            ClipboardManager cm = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
-            cm.setPrimaryClip(ClipData.newPlainText("cheat", text));
-            Toast.makeText(this, "Скопировано, вставь в игре", Toast.LENGTH_SHORT).show();
-        });
+    private boolean isServiceEnabled() {
+        String enabled = Settings.Secure.getString(getContentResolver(),
+                Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES);
+        String me = getPackageName() + "/" + CheatTyperService.class.getName();
+        return enabled != null && enabled.contains(me);
     }
 }
